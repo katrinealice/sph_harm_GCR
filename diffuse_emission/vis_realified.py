@@ -644,7 +644,7 @@ if __name__ == "__main__":
     lsts = np.deg2rad((lsts_hours/24)*360) # in radian, used by HYDRA (and this code)
     delta_time = 60 # s
     delta_freq = 1e+06 # (M)Hz
-    latitude = 31.7215 * np.pi / 180  # HERA loc in decimal numbers ## There's some sign error in the code, so this missing sign is a quick fix
+    latitude = 30.7215 * np.pi / 180  # HERA loc in decimal numbers ## There's some sign error in the code, so this missing sign is a quick fix
     solver = cg
 
     vis_response, autos, ell, m = vis_proj_operator_no_rot(freqs=freqs, 
