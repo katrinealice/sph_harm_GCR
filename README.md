@@ -1,8 +1,8 @@
-Statistical estimation of full-sky radio maps from 21cm array visibility data using Gaussian Constrained Realisations
+# Statistical estimation of full-sky radio maps from 21cm array visibility data using Gaussian Constrained Realisations
 
-Stand-alone version of code otherwise included in HYDRA. 
+## Stand-alone version of code otherwise included in HYDRA. 
 
-This repo contains the shell script and python script to generate Gaussian Constrained Realisations of the spherical harmonics modes of the sky given some visibility data and prior. This version uses simulated data and parameters are set as in the 'standard case' in our paper https://arxiv.org/abs/2403.13766. 
+## This repo contains the shell script and python script to generate Gaussian Constrained Realisations of the spherical harmonics modes of the sky given some visibility data and prior. This version uses simulated data and parameters are set as in the 'standard case' in our paper https://arxiv.org/abs/2403.13766. 
 
 Some command line arguments can be set:
 -dir: the output directory name 
