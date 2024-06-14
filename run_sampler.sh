@@ -9,7 +9,7 @@
 #SBATCH --array=1#-40 #Run 40 copies of the code = 4000 samples
 #SBATCH --partition cosma8-serial
 #SBATCH --account dp270
-#SBATCH --output /cosma8/data/dp270/dc-glas1/slurm-out/slurm-%J.out
+#SBATCH --output /cosma8/data/dp270/dc-glas1/slurm-out/slurm-%A_%a.out
 
 source ~/.bashrc
 conda deactivate
