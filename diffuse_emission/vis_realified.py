@@ -469,9 +469,9 @@ if __name__ == "__main__":
     data_vec = model_true + data_noise
 
     # Inverse signal covariance
-    zero_value = 0.001
-    prior_cov = (x_true*0.1)**2     # if 0.1 = 10% prior
-    prior_cov[prior_cov == 0] = zero_value
+    min_prior_std = 0.001
+    prior_cov = (0.1 * x_true)**2.
+    prior_cov[prior_cov < min_prior_std**2.] = min_prior_std**2.
     inv_prior_cov = 1/prior_cov
     a_0 = np.random.randn(x_true.size)*np.sqrt(prior_cov) + x_true # gaussian centered on alms with S variance 
 
@@ -579,7 +579,7 @@ if __name__ == "__main__":
              autos=autos,
              x_true=x_true,
              inv_noise_cov=inv_noise_cov,
-             zero_value=zero_value,
+             min_prior_std=min_prior_std,
              inv_prior_cov=inv_prior_cov,
              a_0=a_0,
              wf_soln=wf_soln,
