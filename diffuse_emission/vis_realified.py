@@ -188,13 +188,71 @@ def vis_proj_operator_no_rot(freqs, lsts, beams, ant_pos, lmax, nside, latitude=
     else:
         return vis_response_2D, ell, m
 
+
+def get_em_ell_idx(lmax):
+    """
+    Function to get the em, ell, and index of all the modes given the lmax. 
+    (m,l)-ordering, (m-major ordering)
+
+    Parameters
+    ----------
+    * lmax: (int)
+        Maximum ell value for alms
+
+    Returns
+    -------
+    * ems: (list (int))
+        List of all the em values of the alms (m,l)-ordering (m-major)
+
+    * ells: (list (int))
+        List of all the ell values of the alms (m,l)-ordering (m-major)
+        
+    * idx: (list (int)) 
+        List of all the indices for the alms
+
+    """
+
+    ells_list = np.arange(0,lmax+1)
+    em_real = np.arange(0,lmax+1)
+    em_imag = np.arange(1,lmax+1)
+    
+    Nreal = 0
+    i = 0
+    idx = []
+    ems = []
+    ells = []
+
+    for em in em_real:
+        for ell in ells_list:
+            if ell >= em:
+                idx.append(i)
+                ems.append(em)
+                ells.append(ell)
+                
+                Nreal += 1
+                i +=1
+    
+    Nimag=0
+
+    for em in em_imag:
+        for ell in ells_list:
+            if ell >= em:
+                idx.append(i)
+                ems.append(em)
+                ells.append(ell)
+
+                Nimag += 1
+                i += 1
+
+    return ems, ells, idx
+
 def alms2healpy(alms, lmax):
     """
     Takes a real array split as [real, imag] (without the m=0 modes 
     imag-part) and turns it into a complex array of alms (positive 
     modes only) ordered as in HEALpy.
       
-     Parameters
+    Parameters
     ----------
     * alms (ndarray (floats))
             Array of zeros except for the specified mode. 
@@ -469,7 +527,7 @@ if __name__ == "__main__":
     data_vec = model_true + data_noise
 
     # Inverse signal covariance
-    min_prior_std = 0.001
+    min_prior_std = 0.5
     prior_cov = (0.1 * x_true)**2.
     prior_cov[prior_cov < min_prior_std**2.] = min_prior_std**2.
     inv_prior_cov = 1/prior_cov
