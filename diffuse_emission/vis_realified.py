@@ -246,7 +246,7 @@ def get_em_ell_idx(lmax):
 
     return ems, ells, idx
 
-def find_common_true_index(arr1, arr2):
+def find_common_true_index(arr1, arr2, lmax):
     """
     Find the common index between two arrays of same length consisting of true and false.
 
@@ -260,14 +260,25 @@ def find_common_true_index(arr1, arr2):
 
     Returns
     -------
-    * idx: (int)
-        The common index (if found) otherwise -1
+    * idx_real: (int)
+        The common index for the real part (if found, otherwise -1)
+
+    * idx_imag: (int)
+        The common index for the imag part (if found, otherwise -1)
 
     """
+    real_imag_split_index = int(((lmax+1)**2 + (lmax+1))/2)
+
     for idx in range(len(arr1)):
-        if arr1[idx] and arr2[idx]:
-            return idx
-    return -i
+        if arr1[idx] and arr2[idx] and idx < real_imag_split_index:
+            real_idx = idx
+        elif arr1[idx] and arr2[idx] and idx => real_imag_split_index:
+            imag_idx = idx
+        else:
+            real_idx = -1
+            imag_idx = -1
+
+    return real_idx, imag_idx
 
 def get_idx_ml(em, ell, lmax):
     """
@@ -287,8 +298,11 @@ def get_idx_ml(em, ell, lmax):
 
     Returns
     -------
-    * common_idx: (int)
-        The global index of the spherical harmonic mode
+    * common_idx_real: (int)
+        The global index of the real part of the spherical harmonic mode
+
+    * common_idx_imag: (int)
+        The global index of the imaginary part of the spherical harmonic mode
 
     """
 
@@ -298,13 +312,15 @@ def get_idx_ml(em, ell, lmax):
     em_check = np.array(ems_idx) == em
     ell_check = np.array(ell_idx) == ell
 
-    common_idx = find_common_true_index(arr1=em_check, arr2=ell_check)
+    common_idx_real, common_idx_imag = find_common_true_index(arr1=em_check,
+                                                              arr2=ell_check,
+                                                              lmax=lmax)
+    for common_idx in [common_idx_real, common_idx_imag]:
+        assert common_idx == idx[common_idx], "the global index does not match the index list"
+        assert em == ems_idx[common_idx], "The em corresponding to the global index does not match the chosen em"
+        assert ell == ells_idx[common_idx], "The ell corresponding to the global index does not match the vhosen ell"
 
-    assert common_idx == idx[common_idx], "the global index does not match the index list"
-    assert em == ems_idx[common_idx], "The em corresponding to the global index does not match the chosen em"
-    assert ell == ells_idx[common_idx], "The ell corresponding to the global index does not match the vhosen ell"
-
-    return common_index
+    return common_idx_real, common_idx_imag
 
 def alms2healpy(alms, lmax):
     """
