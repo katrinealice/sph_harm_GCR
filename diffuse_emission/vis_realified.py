@@ -246,6 +246,30 @@ def get_em_ell_idx(lmax):
 
     return ems, ells, idx
 
+def find_common_true_index(arr1, arr2):
+    """
+    Find the common index between two arrays of same length consisting of true and false.
+
+    Parameters
+    ----------
+    * arr1: (ndarray (boolean))
+        The first array to compare, consisting of true and false
+
+    * arr2: (ndarray (boolean))
+        The second array to compare, consisting of true and false
+
+    Returns
+    -------
+    * idx: (int)
+        The common index (if found) otherwise -1
+
+    """
+    for idx in range(len(arr1)):
+        if arr1[idx] and arr2[idx]:
+            return idx
+    return -i
+
+
 def alms2healpy(alms, lmax):
     """
     Takes a real array split as [real, imag] (without the m=0 modes 
