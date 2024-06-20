@@ -269,6 +269,42 @@ def find_common_true_index(arr1, arr2):
             return idx
     return -i
 
+def get_idx_ml(em, ell, lmax):
+    """
+    Get the global index for the alms (m,l)-ordering (m-major) given a m 
+    and ell value. 
+    
+    Parameters
+    ----------
+    * em: (int)
+        The em value of the mode. Note, em cannot be greater than the ell value.
+
+    * ell: (int)
+        The ell value of the mode. Note, ell has to be larger or equal to the em value.
+
+    * lmax: (int)
+        The lmax of the modes
+
+    Returns
+    -------
+    * common_idx: (int)
+        The global index of the spherical harmonic mode
+
+    """
+
+    assert np.all(em <= ell), "m cannot be greater than the ell value"
+    ems_idx, ells_idx, idx = get_em_ell_idx(lmax)
+
+    em_check = np.array(ems_idx) == em
+    ell_check = np.array(ell_idx) == ell
+
+    common_idx = find_common_true_index(arr1=em_check, arr2=ell_check)
+
+    assert common_idx == idx[common_idx], "the global index does not match the index list"
+    assert em == ems_idx[common_idx], "The em corresponding to the global index does not match the chosen em"
+    assert ell == ells_idx[common_idx], "The ell corresponding to the global index does not match the vhosen ell"
+
+    return common_index
 
 def alms2healpy(alms, lmax):
     """
