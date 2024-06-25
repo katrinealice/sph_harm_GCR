@@ -11,6 +11,10 @@ Stand-alone version of code otherwise included in HYDRA.
 
 -data_seed: the random seed for the noise realisation on the simulated data
 
+-prior_seed: the random seed used for the prior variance and prior mean
+
+-cosmic_variance: boolean. Toggles weather a cosmic variance term is included in the prior variance
+
 -jobid: Default $SLURM_ARRAY_TASK_ID. This also determines the random seed for the constrained realisations (along with the specific sample number)
 
 #### Additionally:
