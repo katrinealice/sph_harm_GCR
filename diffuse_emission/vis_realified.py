@@ -58,14 +58,25 @@ np.set_printoptions(threshold=sys.maxsize)
 
 # Construct the argument parser
 AP = argparse.ArgumentParser()
+
 AP.add_argument("-dir", "--directory", required=False,
    help="output directory")
+
 AP.add_argument("-data_seed", "--data_seed", required=False,
-        help="random seed for data noise")
+        help="Int. Random seed for data noise")
+
+AP.add_argument("-prior_seed", "--prior_seed", required=False,
+        help="Int. Random seed for prior variance and mean")
+
 AP.add_argument("-jobid", "--jobid", required=False,
    help="array job id")
-AP.add_argument("-nsamples", "--number_of_samples", required=False,
-        help="total number of samples")
+
+AP.add_argument("-nsamples", "--number_of_samples", type=int, required=False,
+        help="Int. total number of samples")
+
+AP.add_argument("-cosmic_var", "--cosmic_variance", type=str, required=False,
+        help="Toggles whether a cosmic variance term is included in the prior variance")
+
 ARGS = vars(AP.parse_args())
 
 ## Functions
@@ -576,12 +587,15 @@ if __name__ == "__main__":
 
 
     # Including cosmic variance into the prior variance:
-    if ARGS['cosmic_variance'].lower() == 'true' or ARGS['cosmic_variance'] == 0:
-        incl_cosmic_var = True
-    elif ARGS['cosmic_variance'].lower() == 'false' or ARGS['cosmic_variance'] == 1:
-        incl_cosmic_var = False
+    if ARGS['cosmic_variance']:
+        if ARGS['cosmic_variance'].lower() in ('true', 'yes', 't', 'y', '1'):
+            incl_cosmic_var = True
+        elif ARGS['cosmic_variance'].lower() in ('false', 'no', 'f', 'n', '0'):
+            incl_cosmic_var = False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected')
     else:
-        incl_cosmic_var = bool(ARGS['cosmic_variance'])
+        incl_cosmic_var = False
 
     ant_pos = build_hex_array(hex_spec=(3,4), d=14.6)  #builds array with (3,4,3) ants = 10 total
     ants = list(ant_pos.keys())
