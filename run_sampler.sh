@@ -20,4 +20,9 @@ SCRIPT="/cosma/home/dp270/dc-glas1/diffuse_emission/vis_realified.py"
 echo $@
 
 export OMP_NUM_THREADS=1
-python -u $SCRIPT "$@" -dir=standard -nsamples=100 -data_seed=20 -jobid=$SLURM_ARRAY_TASK_ID
+python -u $SCRIPT "$@" -dir=standard \
+                       -nsamples=100 \
+                       -data_seed=20 \
+                       -prior_seed=30 \
+                       -cosmic_variance = True \
+                       -jobid=$SLURM_ARRAY_TASK_ID
