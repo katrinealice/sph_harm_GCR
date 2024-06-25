@@ -261,10 +261,10 @@ def find_common_true_index(arr1, arr2, lmax):
     Returns
     -------
     * idx_real: (int)
-        The common index for the real part (if found, otherwise -1)
+        The common index for the real part
 
     * idx_imag: (int)
-        The common index for the imag part (if found, otherwise -1)
+        The common index for the imag part
 
     """
     real_imag_split_index = int(((lmax+1)**2 + (lmax+1))/2)
@@ -272,11 +272,8 @@ def find_common_true_index(arr1, arr2, lmax):
     for idx in range(len(arr1)):
         if arr1[idx] and arr2[idx] and idx < real_imag_split_index:
             real_idx = idx
-        elif arr1[idx] and arr2[idx] and idx => real_imag_split_index:
+        elif arr1[idx] and arr2[idx] and idx >= real_imag_split_index:
             imag_idx = idx
-        else:
-            real_idx = -1
-            imag_idx = -1
 
     return real_idx, imag_idx
 
@@ -310,7 +307,7 @@ def get_idx_ml(em, ell, lmax):
     ems_idx, ells_idx, idx = get_em_ell_idx(lmax)
 
     em_check = np.array(ems_idx) == em
-    ell_check = np.array(ell_idx) == ell
+    ell_check = np.array(ells_idx) == ell
 
     common_idx_real, common_idx_imag = find_common_true_index(arr1=em_check,
                                                               arr2=ell_check,
@@ -548,12 +545,20 @@ if __name__ == "__main__":
     except FileExistsError:
         print('folder already exists')
     
-    # Defining the data_seed for the precomputation random seed
+    # Defining the data_seed for the noise of the simulated data
     if ARGS['data_seed']:
         data_seed = int(ARGS['data_seed'])
     else:
         # if none is passed go back to 10 as before
         data_seed = 10
+
+    # Defining the prior_seed for the prior variance and prior mean
+    if ARGS['prior_seed']:
+        prior_seed = int(ARGS['prior_seed'])
+    else:
+        # If none is passed, default will be 20
+        prior_seed = 20
+
 
     # Defining the jobid to distinguish multiple runs in one go
     if ARGS['jobid']: 
@@ -569,6 +574,14 @@ if __name__ == "__main__":
         # If none is passed use 100 samples as default
         n_samples = 100
 
+
+    # Including cosmic variance into the prior variance:
+    if ARGS['cosmic_variance'].lower() == 'true' or ARGS['cosmic_variance'] == 0:
+        incl_cosmic_var = True
+    elif ARGS['cosmic_variance'].lower() == 'false' or ARGS['cosmic_variance'] == 1:
+        incl_cosmic_var = False
+    else:
+        incl_cosmic_var = bool(ARGS['cosmic_variance'])
 
     ant_pos = build_hex_array(hex_spec=(3,4), d=14.6)  #builds array with (3,4,3) ants = 10 total
     ants = list(ant_pos.keys())
@@ -592,22 +605,37 @@ if __name__ == "__main__":
                                                         nside=nside,
                                                         latitude=latitude)
 
-    np.random.seed(data_seed)
+    # Setting the random seed to the prior_seed and calculating true sky
+    np.random.seed(prior_seed)
     x_true = get_alms_from_gsm(freq=100,lmax=lmax, nside=nside)
     model_true = vis_response @ x_true
 
-    # Inverse noise covariance and noise on data
-    noise_cov = 0.5 * radiometer_eq(autos@x_true, ants, delta_time, delta_freq)
-    inv_noise_cov = 1/noise_cov
-    data_noise = (np.random.randn(noise_cov.size) + 1.j*np.random.randn(noise_cov.size)) * np.sqrt(noise_cov) 
-    data_vec = model_true + data_noise
-
-    # Inverse signal covariance
+    # Inverse signal covariance 
     min_prior_std = 0.5
     prior_cov = (0.1 * x_true)**2.
     prior_cov[prior_cov < min_prior_std**2.] = min_prior_std**2.
     inv_prior_cov = 1/prior_cov
+
+    # Cosmic variance (if chosen)
+    if incl_cosmic_var == True:
+        cls = hp.alm2cl(alms2healpy(x_true, lmax))
+        f_sky = 1 
+        _, ell_idx, _ = get_em_ell_idx(lmax) 
+        cosmic_var = np.zeros(shape=(len(ell_idx)))
+        for i, ell in enumerate(ell_idx):
+            # !! FixMe !!   f_sky is most likely incorrectly placed
+            cosmic_var[i] = 0.1 * np.sqrt(2/(2*ell+1))*cls[ell]*f_sky
+        prior_cov += cosmic_var
+
+    # Set the prior mean by the prior variance 
     a_0 = np.random.randn(x_true.size)*np.sqrt(prior_cov) + x_true # gaussian centered on alms with S variance 
+
+    # Inverse noise covariance and noise on data
+    np.random.seed(data_seed)
+    noise_cov = 0.5 * radiometer_eq(autos@x_true, ants, delta_time, delta_freq)
+    inv_noise_cov = 1/noise_cov
+    data_noise = (np.random.randn(noise_cov.size) + 1.j*np.random.randn(noise_cov.size)) * np.sqrt(noise_cov) 
+    data_vec = model_true + data_noise
 
     # Define left hand side operator 
     def lhs_operator(x):
@@ -716,6 +744,9 @@ if __name__ == "__main__":
              min_prior_std=min_prior_std,
              inv_prior_cov=inv_prior_cov,
              a_0=a_0,
+             data_seed=data_seed,
+             prior_seed=prior_seed,
+             incl_cosmic_var=incl_cosmic_var,
              wf_soln=wf_soln,
              nside=nside,
              lmax=lmax,
