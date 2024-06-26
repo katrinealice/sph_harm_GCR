@@ -628,7 +628,6 @@ if __name__ == "__main__":
     min_prior_std = 0.5
     prior_cov = (0.1 * x_true)**2.
     prior_cov[prior_cov < min_prior_std**2.] = min_prior_std**2.
-    inv_prior_cov = 1/prior_cov
 
     # Cosmic variance (if chosen)
     if incl_cosmic_var == True:
@@ -641,6 +640,8 @@ if __name__ == "__main__":
             cosmic_var[i] = 0.1 * np.sqrt(2/(2*ell+1))*cls[ell]*f_sky
         prior_cov += cosmic_var
 
+    inv_prior_cov = 1/prior_cov
+    
     # Set the prior mean by the prior variance 
     a_0 = np.random.randn(x_true.size)*np.sqrt(prior_cov) + x_true # gaussian centered on alms with S variance 
 
