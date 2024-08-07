@@ -257,7 +257,7 @@ def get_em_ell_idx(lmax):
 
     return ems, ells, idx
 
-def find_common_true_index(arr1, arr2, lmax):
+def find_common_true_index(arr_em, arr_ell, lmax):
     """
     Find the common index between two arrays of same length consisting of true and false.
 
@@ -280,10 +280,13 @@ def find_common_true_index(arr1, arr2, lmax):
     """
     real_imag_split_index = int(((lmax+1)**2 + (lmax+1))/2)
 
-    for idx in range(len(arr1)):
-        if arr1[idx] and arr2[idx] and idx < real_imag_split_index:
+    real_idx = []
+    imag_idx = []
+
+    for idx in range(len(arr_em)):
+        if arr_em[idx] and arr_ell[idx] and idx < real_imag_split_index:
             real_idx = idx
-        elif arr1[idx] and arr2[idx] and idx >= real_imag_split_index:
+        elif arr_em[idx] and arr_ell[idx] and idx >= real_imag_split_index:
             imag_idx = idx
 
     return real_idx, imag_idx
@@ -320,10 +323,16 @@ def get_idx_ml(em, ell, lmax):
     em_check = np.array(ems_idx) == em
     ell_check = np.array(ells_idx) == ell
 
-    common_idx_real, common_idx_imag = find_common_true_index(arr1=em_check,
-                                                              arr2=ell_check,
+    common_idx_real, common_idx_imag = find_common_true_index(arr_em=em_check,
+                                                              arr_ell=ell_check,
                                                               lmax=lmax)
-    for common_idx in [common_idx_real, common_idx_imag]:
+    if common_idx_imag = []: # happens if m=0
+        idx_list = [common_idx_real]
+        print('skipping imaginary index in find_idx_ml because m=0')
+    else:
+        idx_list = [common_idx_real, common_idx_imag]:
+
+    for common_idx in idx_list:
         assert common_idx == idx[common_idx], "the global index does not match the index list"
         assert em == ems_idx[common_idx], "The em corresponding to the global index does not match the chosen em"
         assert ell == ells_idx[common_idx], "The ell corresponding to the global index does not match the vhosen ell"
@@ -644,7 +653,14 @@ if __name__ == "__main__":
     
     # Set the prior mean by the prior variance 
     a_0 = np.random.randn(x_true.size)*np.sqrt(prior_cov) + x_true # gaussian centered on alms with S variance 
-
+    _, ell_idx, _ = get_em_ell_idx(lmax) 
+    # setting the ell=0 mode to be the true value
+    a_0[np.where(np.array(ell_idx) == 0)[0][0]] = x_true[np.where(np.array(ell_idx) == 0)[0][0]]
+    
+    
+    # Save a_0 in separate file
+    np.savez(path+'a_0_'+f'{prior_seed}_'+f'{jobid}', a_0 = a_0)
+    
     # Inverse noise covariance and noise on data
     np.random.seed(data_seed)
     noise_cov = 0.5 * radiometer_eq(autos@x_true, ants, delta_time, delta_freq)
@@ -749,7 +765,10 @@ if __name__ == "__main__":
     print(f'total_time:\n{total_time}\n')
     print(f'All output saved in folder {path}\n')
     print(f'Note, ant_pos (dict) is saved in own file in {path}\n')
-    
+ 
+    # Save a_0 (again) in separate file
+    np.savez(path+'a_0_end_'+f'{prior_seed}_'+f'{jobid}', a_0 = a_0)
+   
     # Saving all globally calculated data
     np.savez(path+'precomputed_data_'+f'{data_seed}_'+f'{jobid}',
              vis_response=vis_response,
