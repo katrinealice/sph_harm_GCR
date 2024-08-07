@@ -5,7 +5,7 @@
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task 50
-#SBATCH --job-name standard_a0
+#SBATCH --job-name standard
 #SBATCH --array=1 #-40 #Run 40 copies of the code = 4000 samples
 #SBATCH --partition cosma8-serial
 #SBATCH --account dp270
@@ -20,7 +20,7 @@ SCRIPT="/cosma/home/dp270/dc-glas1/diffuse_emission/vis_realified.py"
 echo $@
 
 export OMP_NUM_THREADS=1 
-python -u $SCRIPT "$@" -dir=standard_a0_ell_zero \
+python -u $SCRIPT "$@" -dir=standard \
                        -nsamples=100 \
                        -data_seed=20 \
                        -prior_seed=30 \
