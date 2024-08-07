@@ -3,6 +3,7 @@ bkup1
 temp_archive
 diffuse_emission/
 *.sh
+.gitignore
 
 # Except for this specific file
 !diffuse_emission/vis_realified.py
