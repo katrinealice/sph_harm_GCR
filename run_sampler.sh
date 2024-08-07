@@ -15,7 +15,7 @@ source ~/.bashrc
 conda deactivate
 conda activate hera_sim
 
-SCRIPT="/cosma/home/dp270/dc-glas1/diffuse_emission/vis_realified.py"
+SCRIPT="/cosma/home/dp270/dc-glas1/GCR_sampler/diffuse_emission/vis_realified.py"
 
 echo $@
 
