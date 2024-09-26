@@ -506,9 +506,27 @@ def get_alms_from_gsm(freq, lmax, nside=64, resolution='low', output_model=False
     return healpy2alms(get_healpy_from_gsm(freq, lmax, nside, resolution, output_model, output_map))
 
 def construct_rhs_no_rot(data, inv_noise_cov, inv_prior_cov, omega_0, omega_1, a_0, vis_response):
-    
-    real_data_term = vis_response.real.T @ (inv_noise_cov*data.real + np.sqrt(inv_noise_cov)*omega_1.real)
-    imag_data_term = vis_response.imag.T @ (inv_noise_cov*data.imag + np.sqrt(inv_noise_cov)*omega_1.imag)
+    """
+
+    Parameters
+    ----------
+    * data (ndarray (complex128))
+
+    * inv_cov_noise (ndarray (floats))
+
+    * inv_prior_cov (ndarray (floats))
+
+    * omega_0 (ndarray (floats))
+
+    * omega_1 (ndarray (complex128))
+
+    * a_0 (ndarray (floats))
+
+    * vis_response (ndarray (complex128))
+
+    """
+    real_data_term = vis_response.real.T @ ( inv_noise_cov*data.real + np.sqrt(inv_noise_cov)*omega_1.real )
+    imag_data_term = vis_response.imag.T @ ( inv_noise_cov*data.imag + np.sqrt(inv_noise_cov)*omega_1.imag )
     prior_term = inv_prior_cov*a_0 + np.sqrt(inv_prior_cov)*omega_0
 
     right_hand_side = real_data_term + imag_data_term + prior_term 
