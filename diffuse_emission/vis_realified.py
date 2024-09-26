@@ -74,8 +74,35 @@ AP.add_argument("-jobid", "--jobid", required=False,
 AP.add_argument("-nsamples", "--number_of_samples", type=int, required=False,
         help="Int. total number of samples")
 
+AP.add_argument("-lmax", "--lmax", type=int, required=False,
+        help="Sets the lmax value. Defaults to lmax=20")
+
+AP.add_argument("-NLST", "--number_of_lst", type=int, required=False,
+        help="defines the number of LST timesteps to include. Defaults to 10 if not set")
+
+AP.add_argument("-lst_start", "--lst_start", type=float, required=False,
+        help="defines start of LST range in hours, defaults to 0.")
+
+AP.add_argument("-lst_end", "--lst_end", type=float, required=False,
+        help="defines end of LST range in hours, defaults to 8.")
+
+AP.add_argument("-dish_dia", "--dish_diameter", type=float, required=False,
+        help="allows the user to change dish size, defaults to HERA dishes 14.6 m")
+
 AP.add_argument("-cosmic_var", "--cosmic_variance", type=str, required=False,
         help="Toggles whether a cosmic variance term is included in the prior variance")
+
+AP.add_argument("-flat_prior_mean", "--flat_prior_mean", type=int, required=False,
+        help="Can be used to set the prior mean to a specific value, fx zeros")
+
+AP.add_argument("-N_factor", "--noise_cov_factor", type=int, required=False,
+        help="factor to multiply noise covariance with. Default is no factor")
+
+AP.add_argument("-S_factor", "--prior_cov_factor", type=int, required=False,
+        help="factor to multiply prior covariance with. Default is no factor")
+
+AP.add_argument("-zero_S_inv", "--zero_inv_prior_cov", type=str, required=False,
+        help="toggles whether inv prior covariance should be set to zero. Default is False.")
 
 ARGS = vars(AP.parse_args())
 
@@ -326,11 +353,11 @@ def get_idx_ml(em, ell, lmax):
     common_idx_real, common_idx_imag = find_common_true_index(arr_em=em_check,
                                                               arr_ell=ell_check,
                                                               lmax=lmax)
-    if common_idx_imag = []: # happens if m=0
+    if common_idx_imag == []: # happens if m=0
         idx_list = [common_idx_real]
         print('skipping imaginary index in find_idx_ml because m=0')
     else:
-        idx_list = [common_idx_real, common_idx_imag]:
+        idx_list = [common_idx_real, common_idx_imag]
 
     for common_idx in idx_list:
         assert common_idx == idx[common_idx], "the global index does not match the index list"
@@ -624,14 +651,50 @@ if __name__ == "__main__":
     else:
         incl_cosmic_var = False
 
-    ant_pos = build_hex_array(hex_spec=(3,4), d=14.6)  #builds array with (3,4,3) ants = 10 total
+    # Including cosmic variance into the prior variance:
+    if ARGS['zero_inv_prior_cov']:
+        if ARGS['zero_inv_prior_cov'].lower() in ('true', 'yes', 't', 'y', '1'):
+            set_inv_prior_cov_zero = True
+        elif ARGS['zero_inv_prior_cov'].lower() in ('false', 'no', 'f', 'n', '0'):
+            set_inv_prior_cov_zero = False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected')
+    else:
+        set_inv_prior_cov_zero = False
+
+    if ARGS['lmax']:
+        lmax = int(ARGS['lmax'])
+    else:
+        lmax = 20
+
+    if ARGS['number_of_lst']:
+        NLST = int(ARGS['number_of_lst'])
+    else:
+        NLST = 10
+
+    if ARGS['lst_start']:
+        lst_start = float(ARGS['lst_start'])
+    else:
+        lst_start = 0. # hr
+
+    if ARGS['lst_end']:
+        lst_end = float(ARGS['lst_end'])
+    else:
+        lst_end = 8. # hr
+
+    if ARGS['dish_diameter']:
+        dish_diameter = float(ARGS['dish_diameter'])
+    else:
+        # default to HERA dishes
+        dish_diameter = 14.6
+
+    ant_pos = build_hex_array(hex_spec=(3,4), d=dish_diameter)  #builds array with (3,4,3) ants = 10 total
     ants = list(ant_pos.keys())
-    lmax = 20
     nside = 128
     beam_diameter = 14.
     beams = [pyuvsim.AnalyticBeam('gaussian', diameter=beam_diameter) for ant in ants]
     freqs = np.linspace(100e6, 102e6, 2)
-    lsts_hours = np.linspace(0.,8.,10)      # in hours for easy setting
+    lsts_hours = np.linspace(lst_start, lst_end, NLST)  # in hours for easy setting
     lsts = np.deg2rad((lsts_hours/24)*360) # in radian, used by HYDRA (and this code)
     delta_time = 60 # s
     delta_freq = 1e+06 # (M)Hz
@@ -656,6 +719,9 @@ if __name__ == "__main__":
     prior_cov = (0.1 * x_true)**2.
     prior_cov[prior_cov < min_prior_std**2.] = min_prior_std**2.
 
+    if ARGS['prior_cov_factor']:
+        prior_cov *= int(ARGS['prior_cov_factor'])
+
     # Cosmic variance (if chosen)
     if incl_cosmic_var == True:
         cls = hp.alm2cl(alms2healpy(x_true, lmax))
@@ -667,21 +733,32 @@ if __name__ == "__main__":
             cosmic_var[i] = 0.1 * np.sqrt(2/(2*ell+1))*cls[ell]*f_sky
         prior_cov += cosmic_var
 
-    inv_prior_cov = 1/prior_cov
-    
-    # Set the prior mean by the prior variance 
-    a_0 = np.random.randn(x_true.size)*np.sqrt(prior_cov) + x_true # gaussian centered on alms with S variance 
-    _, ell_idx, _ = get_em_ell_idx(lmax) 
-    # setting the ell=0 mode to be the true value
-    a_0[np.where(np.array(ell_idx) == 0)[0][0]] = x_true[np.where(np.array(ell_idx) == 0)[0][0]]
+    if set_inv_prior_cov_zero == True:
+        inv_prior_cov = np.zeros_like(prior_cov)
+    else:
+        inv_prior_cov = 1/prior_cov
+   
+    if ARGS['flat_prior_mean']:
+        a_0 = np.ones_like(x_true)*int(ARGS['flat_prior_mean'])
+    else:
+        # Set the prior mean by the prior variance 
+        a_0 = np.random.randn(x_true.size)*np.sqrt(prior_cov) + x_true # gaussian centered on alms with S variance 
+        _, ell_idx, _ = get_em_ell_idx(lmax) 
+        # setting the ell=0 mode to be the true value
+        a_0[np.where(np.array(ell_idx) == 0)[0][0]] = x_true[np.where(np.array(ell_idx) == 0)[0][0]]
     
     
     # Save a_0 in separate file
     np.savez(path+'a_0_'+f'{prior_seed}_'+f'{jobid}', a_0 = a_0)
     
-    # Inverse noise covariance and noise on data
+    # Noise covariance
     np.random.seed(data_seed)
     noise_cov = 0.5 * radiometer_eq(autos@x_true, ants, delta_time, delta_freq)
+    
+    if ARGS['noise_cov_factor']:
+        noise_cov *= int(ARGS['noise_cov_factor'])
+
+    # Inverse noise covariance and data noise vector
     inv_noise_cov = 1/noise_cov
     data_noise = (np.random.randn(noise_cov.size) + 1.j*np.random.randn(noise_cov.size)) * np.sqrt(noise_cov) 
     data_vec = model_true + data_noise

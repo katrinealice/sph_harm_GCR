@@ -21,8 +21,14 @@ echo $@
 
 export OMP_NUM_THREADS=1 
 python -u $SCRIPT "$@" -dir=standard \
-                       -nsamples=100 \
+                       -nsamples=200 \
                        -data_seed=20 \
                        -prior_seed=30 \
+                       -lmax=20 \
+                       -NLST=10 \
+                       -lst_start=0.\
+                       -lst_end=8.\
+                       -dish_dia=14.6\
+                       -zero_S_inv=false \
                        -cosmic_var=false \
                        -jobid=$SLURM_ARRAY_TASK_ID
