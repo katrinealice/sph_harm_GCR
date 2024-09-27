@@ -92,8 +92,8 @@ AP.add_argument("-beam_dia", "--beam_diameter", type=float, required=False,
 AP.add_argument("-cosmic_var", "--cosmic_variance", type=str, required=False,
         help="Toggles whether a cosmic variance term is included in the prior variance")
 
-AP.add_argument("-flat_prior_mean", "--flat_prior_mean", type=int, required=False,
-        help="Can be used to set the prior mean to a specific value, fx zeros")
+AP.add_argument("-zero_prior_mean", "--zero_prior_mean", type=str, required=False,
+        help="boolean string. Can be used to set the prior mean to zeros")
 
 AP.add_argument("-N_factor", "--noise_cov_factor", type=int, required=False,
         help="factor to multiply noise covariance with. Default is no factor")
@@ -651,7 +651,7 @@ if __name__ == "__main__":
     else:
         incl_cosmic_var = False
 
-    # Including cosmic variance into the prior variance:
+    # set inv prior covariance to all zeros
     if ARGS['zero_inv_prior_cov']:
         if ARGS['zero_inv_prior_cov'].lower() in ('true', 'yes', 't', 'y', '1'):
             set_inv_prior_cov_zero = True
@@ -662,26 +662,43 @@ if __name__ == "__main__":
     else:
         set_inv_prior_cov_zero = False
 
+    # sets prior mean to all zeros
+    if ARGS['zero_prior_mean']:
+        if ARGS['zero_prior_mean'].lower() in ('true', 'yes', 't', 'y', '1'):
+            set_prior_mean_zero = True
+        elif ARGS['zero_prior_mean'].lower() in ('false', 'no', 'f', 'n', '0'):
+            set_prior_mean_zero = False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected')
+    else:
+        set_prior_mean_zero = False
+
+
+    # lmax
     if ARGS['lmax']:
         lmax = int(ARGS['lmax'])
     else:
         lmax = 20
 
+    # NLST
     if ARGS['number_of_lst']:
         NLST = int(ARGS['number_of_lst'])
     else:
         NLST = 10
 
+    # start of lst range
     if ARGS['lst_start']:
         lst_start = float(ARGS['lst_start'])
     else:
         lst_start = 0. # hr
 
+    # end of lst range
     if ARGS['lst_end']:
         lst_end = float(ARGS['lst_end'])
     else:
         lst_end = 8. # hr
 
+    # diameter of the beam
     if ARGS['beam_diameter']:
         beam_diameter = float(ARGS['beam_diameter'])
     else:
@@ -737,8 +754,8 @@ if __name__ == "__main__":
     else:
         inv_prior_cov = 1/prior_cov
    
-    if ARGS['flat_prior_mean']:
-        a_0 = np.ones_like(x_true)*int(ARGS['flat_prior_mean'])
+    if set_prior_mean_zero == True:
+        a_0 = np.zeros_like(x_true)
     else:
         # Set the prior mean by the prior variance 
         a_0 = np.random.randn(x_true.size)*np.sqrt(prior_cov) + x_true # gaussian centered on alms with S variance 
